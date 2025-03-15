@@ -1,14 +1,13 @@
-from time import strftime
 import time
-from ssr_control import SsrControl
+from controller.power_management.ssr_control import SsrControl
 import threading
-from mqtt_client import MqttCliet
+from controller.mqtt.mqtt_client import MqttCliet
 import json
 from  json.decoder import JSONDecodeError
-from sensor_data_reader import DataReader
+from controller.sensors.sensor_data_reader import DataReader
 from queue import Queue
-from sensor_control import Sensors
-from ssr_control import SsrControl
+from controller.sensors.sensor_control import Sensors
+from controller.control.time_control import TimeControl
 
 SEND_CYCLIC_TOPIC = "data/box_01"
 CMD_RX_TOPIC = "cmd"
@@ -44,25 +43,40 @@ def cyclic_mqtt_publish(data_reader):
         mqtt.client.publish(*payload)
 
 def control_vpd(data_reader, lower_limit, upper_limit):
-    on_triggert = True
+    # very simple implementation. still needs to be optimized
+    on_triggert = False
     off_triggert = False
     while True:
         time.sleep(0.5)
         vpd = data_reader.get_all_data()[0]
-
         if vpd < lower_limit:
             if not on_triggert:
                 on_triggert = True
                 off_triggert = False
-                ssr_control.set_relais("001")
+                ssr_control.set_relais("xx1")
         if vpd > upper_limit:
             if not off_triggert:
                 off_triggert = True
                 on_triggert = False
-                ssr_control.set_relais("000")
+                ssr_control.set_relais("xx0")
 
+def time_control(name, pin, state):
+    func_list = [
+        0,
+        1,
+        switch_led(state)
+
+    ]
+    func_list[pin]
+
+def switch_led(state):
+    if state:
+        ssr_control.set_relais("1xx")
+    else:
+        ssr_control.set_relais("0xx")
 
 if __name__ == '__main__':
+    time_list = [('led_1', 2, ('21:30', '21:31'))]
     login = [
         "90856c128b99426c847ba325322fc58c.s1.eu.hivemq.cloud",
         8883,
@@ -78,8 +92,13 @@ if __name__ == '__main__':
     data_reader = DataReader(sensors, ssr_control)
     mqtt_updater_thread = threading.Thread(target=cyclic_mqtt_publish, args=[data_reader], daemon=True)
     mqtt_updater_thread.start()
-    vpd_control_thread = threading.Thread(target=control_vpd, args=[data_reader, 0.6, 1], daemon=True)
+    vpd_control_thread = threading.Thread(target=control_vpd, args=[data_reader, 0.9, 1.1], daemon=True)
     vpd_control_thread.start()
+    # only for sym
+    sensors.start_sensor_mock(data_reader)
+
+    timer  = TimeControl(time_list, time_control)
+    timer.start_timer()
 
 
     while True:
