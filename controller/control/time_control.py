@@ -28,9 +28,8 @@ class TimeControl():
     def check_time(self):
         while True:
             time.sleep(0.1)
-            # print("check")
             for i, (name, pin, begin_time, end_time) in enumerate(self.get_time_data()):
-                state_change = t_control.check_time_threshold(DateTime.now().time(),begin_time, end_time)
+                state_change = self.check_time_threshold(DateTime.now().time(),begin_time, end_time)
                 if (state_change == True) and (self.state[i] == False):
                     self.state[i] = True
                     self.on_event(name, pin, True)
