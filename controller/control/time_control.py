@@ -3,10 +3,9 @@ import threading
 import time
 
 class TimeControl():
-    def __init__(self, time_list, callback_func):
-        self.time_list = time_list
+    def __init__(self, callback_func):
+        self.time_list = []
         self.on_event = callback_func
-        self.state = [False for _ in range(len(time_list))]
 
     def timestr_to_min(self, string):
         values = string.split(':')
@@ -37,16 +36,25 @@ class TimeControl():
         return on_time
 
     def check_time(self):
+        state = {}
         while True:
             time.sleep(0.1)
-            for i, (name, pin, begin_time, end_time) in enumerate(self.get_time_data()):
-                state_change = self.check_time_threshold(self.timestr_to_min(str(DateTime.now().time())),begin_time, end_time)
-                if (state_change == True) and (self.state[i] == False):
-                    self.state[i] = True
+            for (name, pin, begin_time, end_time) in self.get_time_data():
+                time_check = self.check_time_threshold(self.timestr_to_min(str(DateTime.now().time())),begin_time, end_time)
+                if name not in state.keys():
+                    state.update([(name, False)])
+                if (time_check == True) and (state[name] == False):
+                    state[name] = True
                     self.on_event(name, pin, True)
-                if (state_change == False) and (self.state[i] == True):
-                    self.state[i] = False
+                if (time_check == False) and (state[name] == True):
+                    state[name] = False
                     self.on_event(name, pin, False)
+
+    def add_new_time(self, name, pin, time):
+        self.time_list.append((name, pin, time))
+    
+    def remove_time_by_name(self, remove_name):
+        self.time_list = [(name, pin, time_set) for name, pin, time_set in self.time_list if name != remove_name]
 
     def start_timer(self):
         check_time_thread = threading.Thread(target=self.check_time, daemon=True)
@@ -56,8 +64,15 @@ if __name__ == '__main__':
     def callback(name, pin, state):
         print(name, pin, state)
 
-    time_list = [('led_1', [0, 1, 2, 3], ('23:00', '01:00'))]
-    t_control = TimeControl(time_list=time_list, callback_func=callback)
+    time_list = [('led_1', [0, 1, 2, 3], ('23:55', '01:00')),
+                 ('led_2', [0, 1, 2, 3], ('23:47', '23:48')),
+                 ('led_3', [0, 1, 2, 3], ('23:46', '23:49'))]
+
+    t_control = TimeControl(callback_func=callback)
+    for i in time_list:
+        t_control.add_new_time(*i)
+    t_control.remove_time_by_name("led_2")
+    print(t_control.time_list)
     t_control.start_timer()
     while True:
         time.sleep(0.1)
