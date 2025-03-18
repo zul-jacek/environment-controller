@@ -6,6 +6,7 @@ class TimeControl():
     def __init__(self, callback_func):
         self.time_list = []
         self.on_event = callback_func
+        self.state = {}
 
     def timestr_to_min(self, string):
         values = string.split(':')
@@ -36,22 +37,30 @@ class TimeControl():
         return on_time
 
     def check_time(self):
-        state = {}
         while True:
             time.sleep(0.1)
             for (name, pin, begin_time, end_time) in self.get_time_data():
                 time_check = self.check_time_threshold(self.timestr_to_min(str(DateTime.now().time())),begin_time, end_time)
-                if name not in state.keys():
-                    state.update([(name, None)])
-                if (time_check == True) and ((state[name] == False) or (state[name] == None)):
-                    state[name] = True
+                if name not in self.state.keys():
+                    self.state.update([(name, None)])
+                if (time_check == True) and ((self.state[name] == False) or (self.state[name] == None)):
+                    self.state[name] = True
                     self.on_event(name, pin, True)
-                if (time_check == False) and ((state[name] == True) or (state[name] == None)):
-                    state[name] = False
+                if (time_check == False) and ((self.state[name] == True) or (self.state[name] == None)):
+                    self.state[name] = False
                     self.on_event(name, pin, False)
 
     def add_new_time(self, name, pin, time):
         self.time_list.append((name, pin, time))
+    
+    def get_timer_names(self):
+        return [name for name, pin, time_set in self.time_list]
+
+    def set_new_time_by_name(self, name, new_time):
+        self.time_list = [(list_name, pin, new_time) if list_name == name else (list_name, pin, time_set) for list_name, pin, time_set in self.time_list]
+        
+    def block_exe_by_name(self, name, state = "blocked by func"):
+        self.state[name] = state    
     
     def remove_time_by_name(self, remove_name):
         self.time_list = [(name, pin, time_set) for name, pin, time_set in self.time_list if name != remove_name]

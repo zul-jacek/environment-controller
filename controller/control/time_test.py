@@ -18,6 +18,14 @@ if __name__ == '__main__':
     for i in time_list:
         t_control.add_new_time(*i)
     t_control.remove_time_by_name("led_2")
+    print(t_control.get_timer_names())
+    t_control.set_new_time_by_name("led_8", ('00:46', '00:49'))
+    print(t_control.time_list)
+    t_control.block_exe_by_name("led_7")
+
+
+
+
     # current time is overwritten by self.new_time_now (check_time_threshold)
     start_time = "23:50"
     t_control.new_time_now = t_control.timestr_to_min(start_time)
@@ -27,8 +35,11 @@ if __name__ == '__main__':
     t_control.start_timer()
     
     for accuracy_s in [1, 30]:
-        for _ in range(75):
+        for i in range(75):
             time.sleep(0.5)
+            if i == 15:
+                print("reactivate led_7")
+                t_control.block_exe_by_name("led_7", None)
             t_control.new_time_now += accuracy_s
             if t_control.new_time_now >= 1440:
                 t_control.new_time_now -= 1440
