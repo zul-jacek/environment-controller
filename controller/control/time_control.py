@@ -42,11 +42,11 @@ class TimeControl():
             for (name, pin, begin_time, end_time) in self.get_time_data():
                 time_check = self.check_time_threshold(self.timestr_to_min(str(DateTime.now().time())),begin_time, end_time)
                 if name not in state.keys():
-                    state.update([(name, False)])
-                if (time_check == True) and (state[name] == False):
+                    state.update([(name, None)])
+                if (time_check == True) and ((state[name] == False) or (state[name] == None)):
                     state[name] = True
                     self.on_event(name, pin, True)
-                if (time_check == False) and (state[name] == True):
+                if (time_check == False) and ((state[name] == True) or (state[name] == None)):
                     state[name] = False
                     self.on_event(name, pin, False)
 
